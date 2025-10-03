@@ -9,4 +9,4 @@ This repo holds the OpenAPI spec only (no server code in this sprint), to demons
 - Fetch current user’s booking history (summary view)
  
 ## How to view/edit the API
-- Online: https://editor.swagger.io/ → File → Import URL / Paste `openapi.yaml`
+- Online: https://editor.swagger.io/ → File → Import URL or file / Paste contents of `openapi.yaml`
