@@ -1,0 +1,327 @@
+openapi: 3.1.0
+info:
+  title: User Service API
+  version: 0.1.0
+  description: |
+    API-first definition for the Theatre Booking platform's **User Service**.
+    Covers registration, authentication (JWT), current user profile, and booking history.
+  contact:
+    name: Team Booking
+    email: team@example.com
+servers:
+  - url: https://user.api.example.com
+    description: Production (placeholder)
+  - url: https://staging.user.api.example.com
+    description: Staging (placeholder)
+  - url: http://localhost:8000
+    description: Local dev (when implemented)
+
+tags:
+  - name: Auth
+    description: Registration and login
+  - name: Users
+    description: Current user profile and bookings
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+            examples:
+              default:
+                value:
+                  email: radhika@example.com
+                  password: S3cureP@ss!
+                  fullName: Radhika Patel
+      responses:
+        '201':
+          description: User created
+          headers:
+            Location:
+              description: URL of the created user resource
+              schema: { type: string, format: uri }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Validation or weak password
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate a user and issue JWT
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+            examples:
+              default:
+                value:
+                  email: rpp2142@columbia.edu
+                  password: Nebula4153!
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              examples:
+                default:
+                  value:
+                    accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    tokenType: Bearer
+                    expiresIn: 3600
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429':
+          description: Too many attempts
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current user profile
+      operationId: getMe
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              examples:
+                default:
+                  value:
+                    id: 4a4b5c6d-1111-2222-3333-444455556666
+                    email: rpp2142@columbia.edu
+                    fullName: Radhika Patel
+                    createdAt: 2025-10-01T12:00:00Z
+                    updatedAt: 2025-10-02T09:30:00Z
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+    put:
+      summary: Replace current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401':
+          description: Unauthorized
+        '501':
+          description: Not implemented
+    delete:
+      summary: Delete current user account
+      responses:
+        '204':
+          description: Account deleted
+        '401':
+          description: Unauthorized
+        '501':
+          description: Not implemented
+
+  /users/me/bookings:
+    get:
+      tags: [Users]
+      summary: Get current user's booking history (summary list)
+      operationId: getMyBookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/pageSize'
+        - in: query
+          name: status
+          description: Filter by booking status
+          schema:
+            type: string
+            enum: [PENDING, CONFIRMED, CANCELLED]
+        - in: query
+          name: sort
+          description: Sort by field
+          schema:
+            type: string
+            enum: [createdAt, showtimeAt]
+      responses:
+        '200':
+          description: Paginated booking summaries
+          headers:
+            X-Total-Count:
+              description: Total items available
+              schema: { type: integer, example: 42 }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/BookingSummary' }
+              examples:
+                default:
+                  value:
+                    - id: b1111111-2222-3333-4444-555555555555
+                      showtimeId: s9999999-8888-7777-6666-555555555555
+                      cinemaName: "Regal Union Square"
+                      movieTitle: "Dune: Part Two"
+                      seatLabels: ["E10","E11"]
+                      status: "CONFIRMED"
+                      amount: 29.98
+                      currency: "USD"
+                      showtimeAt: 2025-10-12T19:30:00Z
+                      createdAt: 2025-10-10T14:12:00Z
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    page:
+      name: page
+      in: query
+      description: Page index (0-based)
+      schema: { type: integer, minimum: 0, default: 0 }
+    pageSize:
+      name: pageSize
+      in: query
+      description: Items per page (max 100)
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+
+  schemas:
+    UserRegister:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: radhika@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: S3cureP@ss!
+        fullName:
+          type: string
+          example: Radhika Patel
+    UserLogin:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, example: radhika@example.com }
+        password: { type: string, format: password, example: S3cureP@ss! }
+    User:
+      type: object
+      required: [id, email, createdAt]
+      properties:
+        id: { type: string, format: uuid, example: 4a4b5c6d-1111-2222-3333-444455556666 }
+        email: { type: string, format: email, example: radhika@example.com }
+        fullName: { type: string, example: Radhika Patel }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    TokenResponse:
+      type: object
+      required: [accessToken, tokenType, expiresIn]
+      properties:
+        accessToken: { type: string, description: "JWT access token" }
+        tokenType: { type: string, example: Bearer }
+        expiresIn: { type: integer, example: 3600 }
+    BookingSummary:
+      type: object
+      required: [id, showtimeId, movieTitle, cinemaName, seatLabels, status, amount, currency, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        showtimeId: { type: string, format: uuid }
+        movieTitle: { type: string }
+        cinemaName: { type: string }
+        seatLabels:
+          type: array
+          items: { type: string }
+          example: ["E10","E11"]
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, CANCELLED]
+        amount:
+          type: number
+          format: float
+          example: 29.98
+        currency:
+          type: string
+          example: USD
+        showtimeAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    Problem:
+      type: object
+      description: RFC 7807-style error details
+      properties:
+        type: { type: string, format: uri, example: "about:blank" }
+        title: { type: string, example: "Conflict" }
+        status: { type: integer, example: 409 }
+        detail: { type: string, example: "Email already registered." }
+        instance: { type: string, example: "/auth/register" }
