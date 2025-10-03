@@ -7,7 +7,6 @@ This repo holds the OpenAPI spec only (no server code in this sprint), to demons
 - User registration & login (JWT)
 - Fetch current user profile
 - Fetch current user’s booking history (summary view)
-
+ 
 ## How to view/edit the API
 - Online: https://editor.swagger.io/ → File → Import URL / Paste `openapi.yaml`
-- VS Code: Install "Swagger Viewer" or "OpenAPI (Swagger) Editor" extensions
